@@ -1,0 +1,23 @@
+package initializers
+
+import (
+	"log"
+	"os"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+// postgres://xusmwroo:jNwyDrzJSmS2_PfG2bYoATWNSAotwKEX@satao.db.elephantsql.com/xusmwroo
+var DB *gorm.DB
+
+func ConnectToDB() {
+	var err error
+
+	dsn := os.Getenv("DB_URL")
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	if err != nil {
+		log.Fatal("failed to connect to database")
+	}
+}

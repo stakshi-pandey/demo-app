@@ -3,21 +3,64 @@ package controllers
 import (
 	"demo-app/initializers"
 	"demo-app/models"
+	"errors"
+	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 var body struct {
-	Body  string
 	Title string
+	Body  string
+}
+
+type ApiError struct {
+	Field string
+	Msg   string
+}
+
+// return custom error messages for validation errors
+func MsgForTag(tag, field string) string {
+	switch tag {
+	case "required":
+		return field + " is required"
+	case "alpha":
+		return field + " must only contain alphabets"
+	}
+	return ""
 }
 
 func CreatePost(c *gin.Context) {
-	// get data off request body
 
+	fmt.Println("creating post")
+
+	// get data off request body
 	c.Bind(&body)
+
 	// create a post
-	post := models.Post{Title: body.Title, Body: body.Body}
+	post := models.Post{
+		Title: body.Title,
+		Body:  body.Body,
+	}
+
+	//create new validator instance
+	v := validator.New()
+	//validate post
+	err := v.Struct(post)
+	// return validation error if exists
+	if err != nil {
+		var error_msgs []any
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				error_msgs = append(error_msgs, ApiError{fe.Field(), MsgForTag(fe.Tag(), fe.Field())})
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"errors": error_msgs})
+		}
+		return
+	}
 
 	result := initializers.DB.Create(&post)
 
